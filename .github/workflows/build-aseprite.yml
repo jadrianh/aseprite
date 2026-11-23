@@ -1,15 +1,25 @@
-name: Compilar Aseprite
+name: Compilar Aseprite (Última Release)
 
 on:
-  workflow_dispatch: # Permite ejecutarlo manualmente con un botón
+  workflow_dispatch:
 
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - name: Descargar código y submódulos
+      - name: Obtener etiqueta de la última Release oficial
+        id: latest_release
+        shell: bash
+        run: |
+          TAG=$(curl -s https://github.com | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Última versión detectada: $TAG"
+
+      - name: Descargar código oficial de esa Release
         uses: actions/checkout@v7
         with:
+          repository: aseprite/aseprite
+          ref: ${{ steps.latest_release.outputs.tag }}
           submodules: recursive
 
       - name: Configurar MSVC (x64)
@@ -46,6 +56,6 @@ jobs:
       - name: Subir ejecutable para descargar
         uses: actions/upload-artifact@v5
         with:
-          name: Aseprite-Windows
+          name: Aseprite-${{ steps.latest_release.outputs.tag }}-Windows
           path: Aseprite-Compilado/
           retention-days: 1
