@@ -10,8 +10,10 @@ jobs:
       - name: Obtener etiqueta de la última Release oficial
         id: latest_release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          TAG=$(curl -s https://github.com | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          TAG=$(gh release view --repo aseprite/aseprite --json tagName -q .tagName)
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Última versión detectada: $TAG"
 
