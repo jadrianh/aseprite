@@ -1,0 +1,45 @@
+name: Compilar Aseprite
+
+on:
+  workflow_dispatch: # Permite ejecutarlo manualmente con un botón
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Descargar código y submódulos
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configurar herramientas de C++ (MSVC y Ninja)
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Instalar Ninja
+        run: choco install ninja -y
+
+      - name: Descargar Skia (aseprite-m124)
+        shell: bash
+        run: |
+          skia_url=$(source laf/misc/skia-url.sh | xargs)
+          curl -L -o skia.zip "$skia_url"
+          unzip skia.zip -d skia
+
+      - name: Configurar CMake y Compilar
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLAF_BACKEND=skia -DSKIA_DIR="$env:GITHUB_WORKSPACE\skia" -DSKIA_LIBRARY_DIR="$env:GITHUB_WORKSPACE\skia\out\Release-x64" -DSKIA_LIBRARY="$env:GITHUB_WORKSPACE\skia\out\Release-x64\skia.lib" -G Ninja ..
+          ninja aseprite
+
+      - name: Empaquetar Aseprite
+        run: |
+          mkdir Aseprite-Compilado
+          xcopy /E /I /Y build\bin\* Aseprite-Compilado\
+
+      - name: Subir ejecutable para descargar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aseprite-Windows
+          path: Aseprite-Compilado/
+          retention-days: 1
